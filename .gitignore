@@ -1,0 +1,5 @@
+# Eclipse / STS
+.metadata/
+.classpath
+.project
+.settings/
