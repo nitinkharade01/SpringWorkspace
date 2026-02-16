@@ -1,7 +1,6 @@
 package Nitin.example.Authentication.entity;
 
 import jakarta.persistence.*;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
@@ -22,33 +21,32 @@ public class User {
 
     @NotBlank
     private String password;
-    
 
-        // getters & setters
-        public String getUsername() {
-            return username;
-        }
+    // ✅ MISSING FIELDS ADDED
+    private String name;     // Maps to your DB 'name' column
+    private String role;     // Maps to your DB 'role' column
 
-        public void setUsername(String username) {
-            this.username = username;
-        }
+    // ✅ COMPLETE Constructors
+    public User() {}
 
-        public String getEmail() {
-            return email;
-        }
+    // ✅ COMPLETE Getters & Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-        public void setEmail(String email) {
-            this.email = email;
-        }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
-        public String getPassword() {
-            return password;
-        }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-        public void setPassword(String password) {
-            this.password = password;
-        }
-    
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
-    // getters & setters
+    // ✅ FIXED setRole()
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+
+    // ✅ name getters/setters
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 }

@@ -1,0 +1,76 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: INGESTION-SERVICE  # ← UPPERCASE for Eureka
+
+  # MySQL (PERFECT - same as persistence)
+  datasource:
+    url: jdbc:mysql://localhost:3307/segregationdb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: root@123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect  # ← Fixed (MySQL8 deprecated)
+
+  # KAFKA PRODUCER (ENHANCED - Exactly-Once)
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all                    # ← CRITICAL: Wait for all replicas
+      retries: 3                   # ← Retry failed sends
+      enable-idempotence: true     # ← Exactly-once guarantee
+      properties:
+        spring:
+          json:
+            trusted:
+              packages: 'com.example.*'  # ← Security fix
+            add:
+              type:
+                info: true             # ← Fixed syntax
+    listener:
+      ack-mode: manual             # ← For future consumers
+
+# Eureka (PERFECT)
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true       # ← Added
+
+# Management (ENHANCED)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,kafka
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    kafka:
+      enabled: true
+
+# Logging (PERFECT)
+logging:
+  level:
+    com.example.ingestion: DEBUG
+    org.springframework.kafka: INFO
+    org.springframework.web: INFO
+
+# App Config
+app:
+  kafka:
+    output-topic: raw-data-topic    # → To segregation-service
+

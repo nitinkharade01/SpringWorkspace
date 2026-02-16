@@ -1,0 +1,55 @@
+DataSegregationEngine/ (ROOT)
+├── pom.xml                          # ✅ Parent POM (Spring Boot 3.2.2 + Cloud 2023.0.4)
+├── docker-compose.yml               # ✅ MySQL:3307 + Mongo:27017 + Redis:6379 + Kafka:9092
+├── README.md                        # ✅ Production launch guide
+├── common/                          # ✅ Shared DTOs (Dataset.java)
+│   ├── pom.xml                      # ✅ Lombok + Jackson + Validation
+│   └── src/
+│       └── main/
+│           └── java/
+│               └── com/
+│                   └── example/
+│                       └── common/
+│                           └── model/
+│                               └── Dataset.java     # ✅ DataEvent DTO
+├── discovery-server/                # ✅ Eureka Server (8761)
+│   ├── pom.xml                      # ✅ eureka-server dependency
+│   ├── src/
+│   │   └── main/
+│   │       └── java/0
+│   │           └── com/
+│   │               └── example/
+│   │                   └── discoveryserver/
+│   │                       └── DiscoveryServerApplication.java
+│   └── src/main/resources/
+│       └── application.yml          # ✅ Eureka config
+├── api-gateway/                     # ✅ Spring Cloud Gateway (8080)
+│   ├── pom.xml                      # ✅ gateway + eureka-client + common
+│   └── src/main/resources/
+│       └── application.yml          # ✅ Route to ingestion-service
+├── ingestion-service/               # ✅ REST API + MySQL + Kafka Producer (8081)
+│   ├── pom.xml                      # ✅ web + jpa + kafka + common
+│   ├── src/
+│   │   └── main/
+│   │       └── java/
+│   │           └── com/
+│   │               └── example/
+│   │                   └── ingestionservice/
+│   │                       └── IngestionApplication.java
+│   └── src/main/resources/
+│       └── application.yml          # ✅ MySQL:3307 + Kafka producer
+├── segregation-service/             # ✅ Kafka raw→processed (8082)
+│   ├── pom.xml                      # ✅ kafka + resilience4j + common
+│   └── src/main/resources/
+│       └── application.yml          # ✅ Kafka consumer/producer
+└── persistence-service/             # ✅ Multi-DB + Kafka Consumer (8083)
+    ├── pom.xml                      # ✅ jpa + mongodb + redis + kafka + common
+    ├── src/
+    │   └── main/
+    │       └── java/
+    │           └── com/
+    │               └── example/
+    │                   └── persistenceservice/
+    │                       └── PersistenceApplication.java
+    └── src/main/resources/
+        └── application.yml          # ✅ MySQL + Mongo + Redis + Kafka consumer
