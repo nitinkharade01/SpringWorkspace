@@ -1,0 +1,171 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports: ["5432:5432"]
+    volumes:
+      - ./init-postgres.sql:/docker-entrypoint-initdb.d/init-postgres.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  mongo:
+    image: mongo:7
+    ports: ["27017:27017"]
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    depends_on: [zookeeper]
+    ports: ["9092:9092"]
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+  discovery-server:
+    build:
+      context: ../backend
+      dockerfile: discovery-server/Dockerfile
+    ports: ["8761:8761"]
+  api-gateway:
+    build:
+      context: ../backend
+      dockerfile: api-gateway/Dockerfile
+    depends_on: [discovery-server]
+    ports: ["8080:8080"]
+    environment: &service-env
+      EUREKA_URL: http://discovery-server:8761/eureka
+      JWT_SECRET: change-this-secret-to-a-very-long-256-bit-key
+  auth-service:
+    build:
+      context: ../backend
+      dockerfile: auth-service/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+    expose: ["8081"]
+    environment:
+      <<: *service-env
+      AUTH_DB_URL: jdbc:postgresql://postgres:5432/auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+  transaction-service:
+    build:
+      context: ../backend
+      dockerfile: transaction-service/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+    expose: ["8082"]
+    environment:
+      <<: *service-env
+      TRANSACTION_DB_URL: jdbc:postgresql://postgres:5432/transaction_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+  fraud-detection-service:
+    build:
+      context: ../backend
+      dockerfile: fraud-detection-service/Dockerfile
+    depends_on:
+      mongo:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+    expose: ["8083"]
+    environment:
+      <<: *service-env
+      MONGO_URI: mongodb://mongo:27017/fraud_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+  reconciliation-service:
+    build:
+      context: ../backend
+      dockerfile: reconciliation-service/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+    expose: ["8084"]
+    environment:
+      <<: *service-env
+      RECONCILIATION_DB_URL: jdbc:postgresql://postgres:5432/reconciliation_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+  notification-service:
+    build:
+      context: ../backend
+      dockerfile: notification-service/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+    expose: ["8085"]
+    environment:
+      <<: *service-env
+      NOTIFICATION_DB_URL: jdbc:postgresql://postgres:5432/notification_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+  reporting-service:
+    build:
+      context: ../backend
+      dockerfile: reporting-service/Dockerfile
+    depends_on: [discovery-server]
+    expose: ["8086"]
+    environment:
+      <<: *service-env
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ../frontend:/app
+      - frontend_node_modules:/app/node_modules
+    command: sh -c "npm install && npm run dev"
+    ports: ["5173:5173"]
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080
+volumes:
+  frontend_node_modules:

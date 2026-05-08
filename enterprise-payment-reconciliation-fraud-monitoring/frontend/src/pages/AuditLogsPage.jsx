@@ -1,0 +1,1 @@
+export default function AuditLogsPage() { return <div className="page"><h2>Audit Logs</h2><table><tbody><tr><td>STATUS_CHANGED</td><td>Transaction lifecycle changes are persisted in transaction_audit_logs.</td></tr><tr><td>API_ACCESS</td><td>Gateway request correlation IDs are ready for centralized logging.</td></tr></tbody></table></div>; }
