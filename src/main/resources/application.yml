@@ -1,0 +1,49 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: enterprise-payment-reconciliation-fraud-monitoring
+  datasource:
+    url: jdbc:mysql://localhost:3306/payment_reconciliation_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: root123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    open-in-view: false
+  kafka:
+    bootstrap-servers: localhost:9092
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  cache:
+    type: simple
+
+app:
+  jwt:
+    secret: local-dev-secret-key-for-payment-project-please-change
+    expiration-ms: 86400000
+  kafka:
+    enabled: false
+    topics:
+      payment-created: payment-created
+      payment-validated: payment-validated
+      reconciliation-completed: reconciliation-completed
+      fraud-alert: fraud-alert
+  redis:
+    enabled: false
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.cfbp.paymentreconciliation: INFO
