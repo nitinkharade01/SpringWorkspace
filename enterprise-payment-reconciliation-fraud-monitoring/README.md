@@ -6,6 +6,8 @@ This project is designed to represent the kind of real-world work expected from 
 
 ## Business Problem
 
+
+
 Payment teams need to process large numbers of customer transactions while continuously answering three operational questions:
 
 - Was the payment successful and traceable?
